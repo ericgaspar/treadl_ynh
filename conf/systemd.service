@@ -6,13 +6,10 @@ After=network.target
 Type=simple
 User=__APP__
 Group=__APP__
-WorkingDirectory=__INSTALL_DIR__/
-ExecStart=__INSTALL_DIR__/script
-StandardOutput=append:/var/log/__APP__/__APP__.log
-StandardError=inherit
+WorkingDirectory=__INSTALL_DIR__/live/
+ReadWriteDirectories=__INSTALL_DIR__/live/
+ExecStart=__INSTALL_DIR__/venv/bin/gunicorn -b 127.0.0.1:__PORT__ app:app &
 
-### Depending on specificities of your service/app, you may need to tweak these
-### .. but this should be a good baseline
 # Sandboxing options to harden security
 # Details for these options: https://www.freedesktop.org/software/systemd/man/systemd.exec.html
 NoNewPrivileges=yes
@@ -44,6 +41,39 @@ CapabilityBoundingSet=~CAP_SYS_TTY_CONFIG
 CapabilityBoundingSet=~CAP_MAC_ADMIN CAP_MAC_OVERRIDE
 CapabilityBoundingSet=~CAP_NET_ADMIN CAP_NET_BROADCAST CAP_NET_RAW
 CapabilityBoundingSet=~CAP_SYS_ADMIN CAP_SYS_PTRACE CAP_SYSLOG
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+[Unit]
+Description=Vaultwarden Server (Rust Edition)
+Documentation=https://github.com/dani-garcia/vaultwarden
+After=network.target
+
+[Service]
+User=__APP__
+Group=__APP__
+WorkingDirectory=__INSTALL_DIR__/live/
+ReadWriteDirectories=__INSTALL_DIR__/live/ __DATA_DIR__/ /var/log/__APP__/
+EnvironmentFile=__INSTALL_DIR__/live/.env
+ExecStart=__INSTALL_DIR__/live/vaultwarden
+StandardOutput=append:/var/log/__APP__/__APP__.log
+StandardError=inherit
+
+# Set reasonable connection and process limits
+LimitNOFILE=1048576
+LimitNPROC=64
+
+# Sandboxing options to harden security
+# Depending on specificities of your service/app, you may need to tweak these 
+# .. but this should be a good baseline
+# Details for these options: https://www.freedesktop.org/software/systemd/man/systemd.exec.html
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectHome=false
+ProtectSystem=strict
 
 [Install]
 WantedBy=multi-user.target
